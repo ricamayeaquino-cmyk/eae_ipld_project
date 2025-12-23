@@ -9,7 +9,7 @@ import streamlit as st
 # ----- Left menu -----
 with st.sidebar:
     st.image("eae_img.png", width=200)
-    st.write("Interactive Project to load a dataset with information about Netflix Movies and Series, extract some insights usign Pandas and displaying them with Matplotlib.")
+    st.write("Interactive Project to load a dataset with information about Netflix Movies and Series, extract some insights using Pandas and displaying them with Matplotlib.")
     st.write("Data extracted from: https://www.kaggle.com/datasets/shivamb/netflix-shows (with some cleaning and modifications)")
 
 
@@ -23,11 +23,8 @@ st.divider()
 @st.cache_data
 def load_data():
     data_path = "data/netflix_titles.csv"
-
-    movies_df = None  # TODO: Ex 2.1: Load the dataset using Pandas, use the data_path variable and set the index column to "show_id"
-
-    return movies_df   # a Pandas DataFrame
-
+    movies_df = pd.read_csv(data_path, index_col="show_id")
+    return movies_df
 
 movies_df = load_data()
 
@@ -38,18 +35,21 @@ with st.expander("Check the complete dataset:"):
 
 # ----- Extracting some basic information from the dataset -----
 
-# TODO: Ex 2.2: What is the min and max release years?
-min_year = None
-max_year = None
+# Ex 2.2: What is the min and max release years?
+min_year = movies_df['release_year'].min()
+max_year = movies_df['release_year'].max()
 
-# TODO: Ex 2.3: How many director names are missing values (NaN)?
-num_missing_directors = None
+# Ex 2.3: How many director names are missing values (NaN)?
+num_missing_directors = movies_df['director'].isna().sum()
 
-# TODO: Ex 2.4: How many different countries are there in the data?
-n_countries = None
+# Ex 2.4: How many different countries are there in the data?
+movies_df['country'] = movies_df['country'].fillna("Unknown")
+all_countries = ", ".join(movies_df['country'].tolist()).split(", ")
+n_countries = len(set(all_countries))
 
-# TODO: Ex 2.5: How many characters long are on average the title names?
-avg_title_length = None
+# Ex 2.5: How many characters long are on average the title names?
+movies_df['title_length'] = movies_df['title'].apply(lambda x: len(x))
+avg_title_length = movies_df['title_length'].mean()
 
 
 # ----- Displaying the extracted information metrics -----
@@ -73,20 +73,40 @@ st.header("Top Year Producer Countries")
 cols2 = st.columns(2)
 year = cols2[0].number_input("Select a year:", min_year, max_year, 2005)
 
-# TODO: Ex 2.6: For a given year, get the Pandas Series of how many movies and series 
-# combined were made by every country, limit it to the top 10 countries.
-top_10_countries = None
+# Ex 2.6: For a given year, get the top 10 countries
+year_data = movies_df.loc[movies_df['release_year'] == year, 'country']
 
-# print(top_10_countries)
-if top_10_countries is not None:
+# Split countries and count each one individually
+country_list = []
+for countries in year_data:
+    if pd.notna(countries):  # Check if not NaN
+        # Split by comma and strip whitespace
+        split_countries = [country.strip() for country in countries.split(',')]
+        country_list.extend(split_countries)
+
+# Convert to Series and get value counts
+country_counts = pd.Series(country_list).value_counts()
+
+# Get top 10 and sort in descending order
+top_10_countries = country_counts.head(10).sort_values(ascending=False)
+
+# Netflix red gradient - darkest to lightest
+netflix_reds = ['#660708', '#831010', '#9d0208', '#B20710', '#d00000', 
+                '#E50914', '#dc2f02', '#e85d04', '#f48c06', '#ffba08']
+
+if top_10_countries is not None and len(top_10_countries) > 0:
     fig = plt.figure(figsize=(8, 8))
-    plt.pie(top_10_countries, labels=top_10_countries.index, autopct="%.2f%%")
+    plt.pie(top_10_countries, 
+            labels=top_10_countries.index, 
+            autopct="%.2f%%",
+            startangle=90,      # Start at 0 degrees (12 o'clock)
+            counterclock=False, # Go clockwise
+            colors=netflix_reds) # Netflix red gradient
     plt.title(f"Top 10 Countries in {year}")
 
     st.pyplot(fig)
-
 else:
-    st.subheader("⚠️ You still need to develop the Ex 2.6.")
+    st.subheader("⚠️ No data available for this year.")
 
 
 # ----- Line Chart: Avg duration of movies by year -----
@@ -94,18 +114,33 @@ else:
 st.write("##")
 st.header("Avg Duration of Movies by Year")
 
-# TODO: Ex 2.7: Make a line chart of the average duration of movies (not TV shows) in minutes for every year across all the years. 
-movies_avg_duration_per_year = None
+# Ex 2.7: Make a line chart of the average duration of movies
+# Filter only movies (not TV Shows)
+movies_only = movies_df[movies_df['type'] == 'Movie'].copy()
 
-if movies_avg_duration_per_year is not None:
+# Extract minutes as integers from the duration column
+movies_only['duration_minutes'] = movies_only['duration'].apply(
+    lambda x: int(x.split()[0]) if pd.notna(x) and 'min' in x else None
+)
+
+# Group by year and calculate average duration
+movies_avg_duration_per_year = movies_only.groupby('release_year')['duration_minutes'].mean()
+
+if movies_avg_duration_per_year is not None and len(movies_avg_duration_per_year) > 0:
     fig = plt.figure(figsize=(9, 6))
+    plt.plot(movies_avg_duration_per_year.index, 
+             movies_avg_duration_per_year.values, 
+             marker='o', 
+             linewidth=2,
+             color='#E50914',           # Netflix red
+             markerfacecolor='#E50914', # Netflix red markers
+             markeredgecolor='#B20710', # Darker red edge
+             markersize=6)
 
-    # plt.plot(...# TODO: generate the line plot using plt.plot() and the information from movies_avg_duration_per_year (the vertical axes with the minutes value) and its index (the horizontal axes with the years)
-
+    plt.xlabel("Year")
+    plt.ylabel("Average Duration (minutes)")
     plt.title("Average Duration of Movies Across Years")
-
+    plt.grid(True, alpha=0.3)
     st.pyplot(fig)
-
 else:
     st.subheader("⚠️ You still need to develop the Ex 2.7.")
-
