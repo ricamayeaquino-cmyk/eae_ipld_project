@@ -16,12 +16,12 @@ def home_page():
         st.header("Introduction to Programming Languages for Data")
         st.write("###")
         st.write("***Final Project - Dec 2025***")
-        st.write("**Author:** Rica Aquino")
+        st.write("**Author:** <Your Name>")
         st.write("**Instructor:** [Enric Domingo](https://github.com/enricd)")
 
 
     # ----- Top title -----
-    st.html("""<div style="text-align: center;"><h1 style="text-align: center;">👋 Hi! My name is Rica</h1></div>""")  # TODO: Add your name
+    st.html("""<div style="text-align: center;"><h1 style="text-align: center;">👋 Hi! My name is Python</h1></div>""")  # TODO: Add your name
 
 
     # ----- Profile image file -----
@@ -52,7 +52,7 @@ def home_page():
 
     # TODO: Modify and adapt the following lines to your info, you can add or remove some details if you want
     st.write("""
-    - 🧑‍💻 I am a Student of Master in Big Data Analytics 
+    - 🧑‍💻 I am a <Current Role and/or Studies> 
 
     - 🛩️ prev: Bachelor of Science in Statistics
 
